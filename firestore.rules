@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 64 && id.matches('^[a-zA-Z0-9_-]+$');
+    }
+
+    // Validation for SavedProjectIdea
+    function isValidIdea(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'project', 'savedAt'])
+        && data.keys().hasOnly(['id', 'userId', 'project', 'savedAt', 'notes', 'isAiGenerated'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 128
+        && data.userId == userId
+        && data.project is map
+        && data.savedAt is string && data.savedAt.size() <= 50
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000))
+        && (!('isAiGenerated' in data) || data.isAiGenerated is bool);
+    }
+
+    // Validation for SavedStudentSession
+    function isValidSession(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'targetProfession', 'timestamp'])
+        && data.keys().hasOnly(['id', 'userId', 'studentName', 'schoolName', 'targetProfession', 'resources', 'recommendedProjects', 'activeProject', 'completedStepIndices', 'completedSteps', 'projectNotes', 'notes', 'timestamp', 'isCompleted'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 128
+        && data.userId == userId
+        && (!('studentName' in data) || (data.studentName is string && data.studentName.size() <= 200))
+        && (!('schoolName' in data) || (data.schoolName is string && data.schoolName.size() <= 200))
+        && data.targetProfession is string && data.targetProfession.size() <= 200
+        && data.timestamp is string && data.timestamp.size() <= 50
+        && (!('resources' in data) || data.resources is map)
+        && (!('recommendedProjects' in data) || data.recommendedProjects is list)
+        && (!('activeProject' in data) || data.activeProject is map)
+        && (!('completedStepIndices' in data) || data.completedStepIndices is list)
+        && (!('completedSteps' in data) || data.completedSteps is list)
+        && (!('projectNotes' in data) || (data.projectNotes is string && data.projectNotes.size() <= 5000))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 5000))
+        && (!('isCompleted' in data) || data.isCompleted is bool);
+    }
+
+    // User Data Space
+    match /users/{userId} {
+      allow get, write: if isOwner(userId) && isValidId(userId);
+
+      // Subcollection: Saved Project Ideas
+      match /savedProjectIdeas/{ideaId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(ideaId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(ideaId)
+          && isValidIdea(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(ideaId)
+          && isValidIdea(request.resource.data, userId)
+          && request.resource.data.id == resource.data.id
+          && request.resource.data.userId == resource.data.userId;
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(ideaId);
+      }
+
+      // Subcollection: Saved Student Sessions (Jobsheet progress)
+      match /savedSessions/{sessionId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(sessionId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(sessionId)
+          && isValidSession(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(sessionId)
+          && isValidSession(request.resource.data, userId)
+          && request.resource.data.id == resource.data.id
+          && request.resource.data.userId == resource.data.userId;
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(sessionId);
+      }
+    }
+  }
+}

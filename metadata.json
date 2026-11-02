@@ -1,0 +1,6 @@
+{
+  "name": "VocationCraft - Student Career & School Resource Simulator",
+  "description": "Track student career and venture requirements against school tools and raw material inventory, and recommend tailored hands-on project simulations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

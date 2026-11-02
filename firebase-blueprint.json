@@ -1,0 +1,102 @@
+{
+  "entities": {
+    "SavedProjectIdea": {
+      "title": "SavedProjectIdea",
+      "description": "Rancangan ide proyek kejuruan yang disimpan oleh siswa atau guru.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier untuk ide proyek tersimpan."
+        },
+        "userId": {
+          "type": "string",
+          "description": "ID pengguna pemilik data rancangan ide."
+        },
+        "project": {
+          "type": "object",
+          "description": "Detail data proyek simulasi kejuruan."
+        },
+        "savedAt": {
+          "type": "string",
+          "description": "Waktu pembuatan atau penyimpanan (ISO 8601 string)."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Catatan tambahan atau rencana praktik siswa."
+        },
+        "isAiGenerated": {
+          "type": "boolean",
+          "description": "Penanda apakah dirancang dengan bantuan AI Gemini."
+        }
+      },
+      "required": ["id", "userId", "project", "savedAt"]
+    },
+    "SavedStudentSession": {
+      "title": "SavedStudentSession",
+      "description": "Sesi lembar kerja praktik mandiri (jobsheet) yang sedang berjalan atau selesai.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier untuk sesi praktik siswa."
+        },
+        "userId": {
+          "type": "string",
+          "description": "ID pengguna pemilik sesi lembar kerja."
+        },
+        "studentName": {
+          "type": "string",
+          "description": "Nama siswa praktikan."
+        },
+        "schoolName": {
+          "type": "string",
+          "description": "Nama sekolah atau instansi (misal: SMKN 4 Kendari)."
+        },
+        "targetProfession": {
+          "type": "string",
+          "description": "Bidang kejuruan atau profesi yang disimulasikan."
+        },
+        "resources": {
+          "type": "object",
+          "description": "Daftar alat dan bahan baku yang digunakan."
+        },
+        "recommendedProjects": {
+          "type": "array",
+          "description": "Daftar proyek rekomendasi."
+        },
+        "activeProject": {
+          "type": "object",
+          "description": "Proyek aktif yang sedang dikerjakan pada jobsheet."
+        },
+        "completedStepIndices": {
+          "type": "array",
+          "description": "Indeks nomor langkah kerja yang telah diselesaikan siswa."
+        },
+        "projectNotes": {
+          "type": "string",
+          "description": "Catatan pengamatan, kendala, atau hasil kerja siswa."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Waktu penyimpanan terakhir (ISO 8601)."
+        },
+        "isCompleted": {
+          "type": "boolean",
+          "description": "Status kelulusan atau penyelesaian semua langkah praktik."
+        }
+      },
+      "required": ["id", "userId", "targetProfession", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/savedProjectIdeas/{ideaId}": {
+      "schema": "SavedProjectIdea",
+      "description": "Koleksi ide rancangan proyek siswa per pengguna."
+    },
+    "/users/{userId}/savedSessions/{sessionId}": {
+      "schema": "SavedStudentSession",
+      "description": "Koleksi progres lembar kerja praktik interaktif per pengguna."
+    }
+  }
+}
