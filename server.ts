@@ -16,12 +16,14 @@ const PORT = 3000;
 
 app.use(express.json({ limit: '10mb' }));
 
-// Inisialisasi GoogleGenAI di sisi server dengan telemetry header
-const apiKey = process.env.GEMINI_API_KEY;
-let ai: GoogleGenAI | null = null;
-if (apiKey) {
-  ai = new GoogleGenAI({
-    apiKey,
+// Inisialisasi GoogleGenAI di sisi server dengan dukungan token kustom per pengguna
+const defaultApiKey = process.env.GEMINI_API_KEY;
+
+function getAiClient(customKey?: string): GoogleGenAI | null {
+  const keyToUse = customKey?.trim() || defaultApiKey;
+  if (!keyToUse) return null;
+  return new GoogleGenAI({
+    apiKey: keyToUse,
     httpOptions: {
       headers: {
         'User-Agent': 'aistudio-build',
@@ -30,11 +32,16 @@ if (apiKey) {
   });
 }
 
+const ai = getAiClient();
+
 // -------------------------------------------------------------
 // MANAJEMEN DATABASE SERVER GRATIS (PERSISTENSI SERVER LOKAL & CLOUD)
 // -------------------------------------------------------------
-const DATA_DIR = path.resolve(__dirname, 'data');
+const DATA_DIR = process.env.VERCEL
+  ? path.resolve('/tmp', 'data')
+  : path.resolve(__dirname, 'data');
 const DB_FILE = path.resolve(DATA_DIR, 'server-database.json');
+const DEFAULT_SEED_FILE = path.resolve(__dirname, 'data', 'server-database.json');
 
 interface ServerDatabase {
   projectIdeas: any[];
@@ -49,6 +56,10 @@ function getDatabase(): ServerDatabase {
     }
     if (fs.existsSync(DB_FILE)) {
       const content = fs.readFileSync(DB_FILE, 'utf-8');
+      return JSON.parse(content);
+    } else if (process.env.VERCEL && fs.existsSync(DEFAULT_SEED_FILE)) {
+      const content = fs.readFileSync(DEFAULT_SEED_FILE, 'utf-8');
+      fs.writeFileSync(DB_FILE, content, 'utf-8');
       return JSON.parse(content);
     }
   } catch (err) {
@@ -70,22 +81,27 @@ function saveDatabase(data: ServerDatabase) {
 }
 
 // Endpoint status kesehatan, AI, & Database Server
-app.get('/api/health', (_req: Request, res: Response) => {
+app.get('/api/health', (req: Request, res: Response) => {
+  const userKey = (req.headers['x-gemini-key'] as string) || (req.headers['authorization']?.replace('Bearer ', '') as string);
+  const activeAi = getAiClient(userKey);
   res.json({
     status: 'ok',
-    aiConfigured: Boolean(apiKey),
+    aiConfigured: Boolean(activeAi),
     databaseConfigured: true,
     serverType: 'Node.js Express Server (Free Hosting Tier)',
     timestamp: new Date().toISOString(),
   });
 });
 
-app.get('/api/ai-status', (_req: Request, res: Response) => {
+app.get('/api/ai-status', (req: Request, res: Response) => {
+  const userKey = (req.headers['x-gemini-key'] as string) || (req.headers['authorization']?.replace('Bearer ', '') as string);
+  const activeAi = getAiClient(userKey);
   res.json({
-    connected: Boolean(apiKey),
+    connected: Boolean(activeAi),
     model: 'gemini-3.8-flash',
     provider: 'Google Gemini AI',
     status: 'online',
+    customTokenUsed: Boolean(userKey),
   });
 });
 
@@ -178,7 +194,13 @@ app.post('/api/recommend-prototype-kit', async (req: Request, res: Response) => 
       return res.status(400).json({ error: 'Profesi atau bidang usaha target wajib diisi' });
     }
 
-    if (!ai) {
+    const userCustomKey =
+      (req.headers['x-gemini-key'] as string) ||
+      (req.headers['authorization']?.replace('Bearer ', '') as string) ||
+      req.body?.userApiKey;
+    const activeAi = getAiClient(userCustomKey);
+
+    if (!activeAi) {
       const fallbackKit = synthesizePrototypeKit({
         targetProfession,
         prototypeMode,
@@ -231,7 +253,7 @@ Berikan respon JSON terstruktur:
 
 Gunakan BAHASA INDONESIA yang jelas, komunikatif, dan memotivasi siswa SMK.`;
 
-    const aiPromise = ai.models.generateContent({
+    const aiPromise = activeAi.models.generateContent({
       model: 'gemini-3.8-flash',
       contents: prompt,
       config: {
@@ -347,7 +369,13 @@ app.post('/api/recommend-projects', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Profesi atau bidang usaha target wajib diisi' });
     }
 
-    if (!ai) {
+    const userCustomKey =
+      (req.headers['x-gemini-key'] as string) ||
+      (req.headers['authorization']?.replace('Bearer ', '') as string) ||
+      req.body?.userApiKey;
+    const activeAi = getAiClient(userCustomKey);
+
+    if (!activeAi) {
       return res.status(200).json({
         fallback: true,
         message: 'Kunci API Gemini tidak aktif, menggunakan rekomendasi kurasi cerdas lokal.',
@@ -372,7 +400,7 @@ Tolong rancang 1 PROYEK SIMULASI SEDERHANA yang:
 5. Ditulis sepenuhnya dalam BAHASA INDONESIA yang komunikatif, mendidik, dan aplikatif.
 `;
 
-    const aiPromise = ai.models.generateContent({
+    const aiPromise = activeAi.models.generateContent({
       model: 'gemini-3.8-flash',
       contents: prompt,
       config: {
@@ -500,7 +528,13 @@ app.post('/api/generate-simulation', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Data siswa dan inventaris wajib diisi' });
     }
 
-    if (!ai) {
+    const userCustomKey =
+      (req.headers['x-gemini-key'] as string) ||
+      (req.headers['authorization']?.replace('Bearer ', '') as string) ||
+      req.body?.userApiKey;
+    const activeAi = getAiClient(userCustomKey);
+
+    if (!activeAi) {
       return res.status(200).json({
         fallback: true,
         message: 'Kunci API Gemini tidak terpasang; sintesis fallback klien akan digunakan.',
@@ -542,7 +576,7 @@ Buat 1 simulasi proyek praktis yang:
 4. Menggunakan bahasa Indonesia yang formal, edukatif, dan praktis.
 `;
 
-    const response = await ai.models.generateContent({
+    const response = await activeAi.models.generateContent({
       model: 'gemini-3.8-flash',
       contents: prompt,
       config: {
@@ -676,6 +710,10 @@ async function startServer() {
   });
 }
 
-startServer().catch((err) => {
-  console.error('Gagal menjalankan server:', err);
-});
+if (!process.env.VERCEL) {
+  startServer().catch((err) => {
+    console.error('Gagal menjalankan server:', err);
+  });
+}
+
+export default app;

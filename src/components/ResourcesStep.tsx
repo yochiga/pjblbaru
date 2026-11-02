@@ -7,6 +7,7 @@ import {
   RecommendedProject,
 } from '../types/recommender';
 import { synthesizePrototypeKit } from '../utils/aiSynthesizer';
+import { getUserAuthToken } from '../firebase';
 import {
   Sparkles,
   Wrench,
@@ -69,9 +70,15 @@ export function ResourcesStep({
     setErrorMessage(null);
 
     try {
+      const userToken = await getUserAuthToken();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (userToken) {
+        headers['Authorization'] = `Bearer ${userToken}`;
+      }
+
       const res = await fetch('/api/recommend-prototype-kit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           targetProfession: selectedProfession,
           prototypeMode: mode,

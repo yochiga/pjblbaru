@@ -1,0 +1,5 @@
+.git
+.aistudio
+node_modules
+.env
+.env.local

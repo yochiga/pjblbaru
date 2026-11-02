@@ -20,6 +20,7 @@ import {
   Play,
   Check,
 } from 'lucide-react';
+import { auth, getUserAuthToken } from '../firebase';
 
 interface AiProjectGeneratorModalProps {
   isOpen: boolean;
@@ -52,6 +53,8 @@ export function AiProjectGeneratorModal({
   const [focusOption, setFocusOption] = useState('Standar Praktik & Industri');
   const [difficulty, setDifficulty] = useState<'Mudah' | 'Sedang' | 'Menantang'>('Mudah');
   const [customNote, setCustomNote] = useState('');
+  const [customApiKey, setCustomApiKey] = useState(() => localStorage.getItem('vocation_user_gemini_key') || '');
+  const [showKeyInput, setShowKeyInput] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [loadingPhase, setLoadingPhase] = useState('');
@@ -60,7 +63,6 @@ export function AiProjectGeneratorModal({
   // State for saving the newly generated project
   const [studentSaveNote, setStudentSaveNote] = useState('');
   const [hasJustSaved, setHasJustSaved] = useState(false);
-
 
   const FOCUS_PRESETS = [
     { id: 'industry', label: '🏭 Standar Praktik & Industri', desc: 'Mensimulasikan SOP bengkel/lab industri nyata' },
@@ -72,6 +74,10 @@ export function AiProjectGeneratorModal({
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profession.trim()) return;
+
+    if (customApiKey) {
+      localStorage.setItem('vocation_user_gemini_key', customApiKey.trim());
+    }
 
     setIsLoading(true);
     setGeneratedProject(null);
@@ -96,9 +102,18 @@ export function AiProjectGeneratorModal({
     }, 3200);
 
     try {
+      const userToken = await getUserAuthToken();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (userToken) {
+        headers['Authorization'] = `Bearer ${userToken}`;
+      }
+      if (customApiKey.trim()) {
+        headers['x-gemini-key'] = customApiKey.trim();
+      }
+
       const res = await fetch('/api/recommend-projects', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           targetProfession: profession,
           availableTools: toolsArray,
@@ -276,6 +291,66 @@ export function AiProjectGeneratorModal({
                     className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
+              </div>
+
+              {/* Status Token Akun Pengguna & Opsi Kunci Pribadi */}
+              <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    {auth.currentUser?.photoURL ? (
+                      <img
+                        src={auth.currentUser.photoURL}
+                        alt="User"
+                        className="w-5 h-5 rounded-full object-cover border border-emerald-500"
+                      />
+                    ) : (
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    )}
+                    <span className="text-slate-300">
+                      Token Pengguna:{' '}
+                      <strong className="text-white">
+                        {auth.currentUser?.displayName || auth.currentUser?.email || 'Akun Default Sistem'}
+                      </strong>
+                    </span>
+                  </div>
+                  {auth.currentUser ? (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                      Akun Google Aktif
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[10px]">
+                      Mode Tamu
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
+                  <button
+                    type="button"
+                    onClick={() => setShowKeyInput(!showKeyInput)}
+                    className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                  >
+                    <span>{showKeyInput ? 'Sembunyikan' : 'Gunakan Token / API Key Gemini Pribadi'}</span>
+                  </button>
+                  {customApiKey && (
+                    <span className="text-[10px] text-emerald-400 font-mono">Kunci kustom terpasang</span>
+                  )}
+                </div>
+
+                {showKeyInput && (
+                  <div className="pt-2 space-y-1">
+                    <input
+                      type="password"
+                      value={customApiKey}
+                      onChange={(e) => setCustomApiKey(e.target.value)}
+                      placeholder="Masukkan Google Gemini API Key pribadi (AIzaSy...)"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                    <p className="text-[10px] text-slate-500">
+                      Opsional: Token ini akan digunakan secara langsung untuk kuota akun pribadi Anda.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Tombol Rancang */}

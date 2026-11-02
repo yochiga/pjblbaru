@@ -39,7 +39,20 @@ import {
   Calendar,
   Database,
   Server,
+  ShieldCheck,
 } from 'lucide-react';
+import { User, onAuthStateChanged } from 'firebase/auth';
+import {
+  auth,
+  signInWithGoogle,
+  signOutUser,
+  fetchUserFirestoreIdeas,
+  saveUserFirestoreIdea,
+  deleteUserFirestoreIdea,
+  fetchUserFirestoreSessions,
+  saveUserFirestoreSession,
+  deleteUserFirestoreSession,
+} from './firebase';
 import {
   checkServerDatabaseStatus,
   fetchServerIdeas,
@@ -125,6 +138,10 @@ export default function App() {
   const [isSavedDrawerOpen, setIsSavedDrawerOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
+  // Authentication State: Google Account
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
+
   // Server Database Status
   const [dbStatus, setDbStatus] = useState<DatabaseStatus | null>(null);
   const [isSyncingDb, setIsSyncingDb] = useState(false);
@@ -145,6 +162,57 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('vocation_saved_project_ideas', JSON.stringify(savedProjectIdeas));
   }, [savedProjectIdeas]);
+
+  // Listener Autentikasi Akun Google & Sinkronisasi Cloud Firestore Pengguna
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setCurrentUser(user);
+      setIsAuthLoading(false);
+
+      if (user) {
+        try {
+          const [cloudIdeas, cloudSessions] = await Promise.all([
+            fetchUserFirestoreIdeas(user.uid),
+            fetchUserFirestoreSessions(user.uid),
+          ]);
+
+          if (cloudIdeas && cloudIdeas.length > 0) {
+            setSavedProjectIdeas((prev) => {
+              const merged = [...prev];
+              cloudIdeas.forEach((cIdea) => {
+                const exists = merged.some(
+                  (m) => m.id === cIdea.id || m.project?.id === cIdea.project?.id
+                );
+                if (!exists) merged.push(cIdea);
+              });
+              return merged;
+            });
+          }
+
+          if (cloudSessions && cloudSessions.length > 0) {
+            setSavedSessions((prev) => {
+              const merged = [...prev];
+              cloudSessions.forEach((cSession) => {
+                const exists = merged.some(
+                  (m) =>
+                    m.id === cSession.id ||
+                    (m.activeProject?.id &&
+                      cSession.activeProject?.id &&
+                      m.activeProject.id === cSession.activeProject.id)
+                );
+                if (!exists) merged.push(cSession);
+              });
+              return merged;
+            });
+          }
+        } catch (err) {
+          console.warn('Gagal memuat data pengguna dari Firestore:', err);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Sinkronisasi data awal dengan Server Database Gratis saat pertama dibuka
   useEffect(() => {
@@ -219,7 +287,34 @@ export default function App() {
     }
   }, [targetProfession, availableResources]);
 
-  // Handle saving a session (disimpan ke localStorage & Server Database Gratis)
+  // Login dengan Google
+  const handleSignInWithGoogle = async () => {
+    setIsAuthLoading(true);
+    try {
+      const user = await signInWithGoogle();
+      showToast(
+        `Selamat datang, ${user.displayName || user.email}! Token akun Google aktif.`
+      );
+    } catch (err: any) {
+      if (err?.code !== 'auth/popup-closed-by-user') {
+        showToast('Gagal masuk dengan Google. Silakan coba kembali.');
+      }
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  // Logout akun Google
+  const handleSignOut = async () => {
+    try {
+      await signOutUser();
+      showToast('Berhasil keluar dari akun Google.');
+    } catch (err) {
+      showToast('Gagal keluar.');
+    }
+  };
+
+  // Handle saving a session (disimpan ke localStorage, Server Database Gratis, & Firestore Akun Pengguna)
   const handleSaveActiveSession = (
     notes: string,
     completedStepIndices: number[],
@@ -237,7 +332,7 @@ export default function App() {
 
     const newSession: SavedStudentSession = {
       id: `session-${Date.now()}`,
-      studentName: 'Siswa SMK Vokasi',
+      studentName: currentUser?.displayName || 'Siswa SMK Vokasi',
       schoolName: 'SMKN 4 Kendari',
       targetProfession,
       resources: availableResources,
@@ -258,6 +353,13 @@ export default function App() {
     saveServerSession(newSession).catch((err) =>
       console.warn('Gagal menyimpan sesi ke server database:', err)
     );
+
+    // Simpan ke Cloud Firestore akun Google pengguna jika sedang login
+    if (currentUser) {
+      saveUserFirestoreSession(currentUser.uid, newSession).catch((err) =>
+        console.warn('Gagal menyimpan sesi ke Firestore akun pengguna:', err)
+      );
+    }
   };
 
   const handleUpdateActiveProject = (updatedProject: RecommendedProject) => {
@@ -278,6 +380,12 @@ export default function App() {
     deleteServerSession(id).catch((err) =>
       console.warn('Gagal menghapus sesi dari server database:', err)
     );
+    // Hapus dari Cloud Firestore pengguna jika login
+    if (currentUser) {
+      deleteUserFirestoreSession(currentUser.uid, id).catch((err) =>
+        console.warn('Gagal menghapus sesi dari Firestore akun pengguna:', err)
+      );
+    }
     showToast('Lembar kerja praktik telah dihapus dari database.');
   };
 
@@ -323,6 +431,12 @@ export default function App() {
         saveServerIdea(updatedIdea).catch((err) =>
           console.warn('Gagal update ide di server database:', err)
         );
+        // Update di Cloud Firestore akun pengguna jika login
+        if (currentUser) {
+          saveUserFirestoreIdea(currentUser.uid, updatedIdea).catch((err) =>
+            console.warn('Gagal update ide ke Firestore akun pengguna:', err)
+          );
+        }
         return updated;
       }
 
@@ -339,11 +453,18 @@ export default function App() {
         console.warn('Gagal menyimpan ide ke server database:', err)
       );
 
+      // Simpan ke Cloud Firestore akun pengguna jika login
+      if (currentUser) {
+        saveUserFirestoreIdea(currentUser.uid, newIdea).catch((err) =>
+          console.warn('Gagal menyimpan ide ke Firestore akun pengguna:', err)
+        );
+      }
+
       return [newIdea, ...prev];
     });
 
     const cleanTitle = project.title.replace(/^[✨\s\[\]A-Za-z]+\]?\s*/, '');
-    showToast(`Ide proyek "${cleanTitle}" berhasil disimpan ke database server!`);
+    showToast(`Ide proyek "${cleanTitle}" berhasil disimpan ke akun & database!`);
   };
 
   const handleRemoveProjectIdea = (projectIdOrIdeaId: string) => {
@@ -354,7 +475,13 @@ export default function App() {
     deleteServerIdea(projectIdOrIdeaId).catch((err) =>
       console.warn('Gagal menghapus ide dari server database:', err)
     );
-    showToast('Ide proyek telah dihapus dari database server.');
+    // Hapus dari Firestore akun pengguna jika login
+    if (currentUser) {
+      deleteUserFirestoreIdea(currentUser.uid, projectIdOrIdeaId).catch((err) =>
+        console.warn('Gagal menghapus ide dari Firestore akun pengguna:', err)
+      );
+    }
+    showToast('Ide proyek telah dihapus dari database.');
   };
 
   const isProjectIdeaSaved = (projectId: string) => {
@@ -376,9 +503,14 @@ export default function App() {
       saveServerIdea(targetIdea).catch((err) =>
         console.warn('Gagal update catatan di server database:', err)
       );
+      if (currentUser) {
+        saveUserFirestoreIdea(currentUser.uid, targetIdea).catch((err) =>
+          console.warn('Gagal update catatan di Firestore pengguna:', err)
+        );
+      }
     }
     setEditingIdeaId(null);
-    showToast('Catatan proyek berhasil diperbarui dan disimpan ke server.');
+    showToast('Catatan proyek berhasil diperbarui dan disimpan ke server & akun.');
   };
 
   const handleCopyIdeaSummary = (idea: SavedProjectIdea) => {
@@ -415,6 +547,10 @@ ${idea.notes ? `\nCATATAN SISWA:\n${idea.notes}` : ''}`;
         savedSessionsCount={savedSessions.length}
         onResetSession={handleResetSession}
         onOpenAiModal={() => setIsAiModalOpen(true)}
+        currentUser={currentUser}
+        onSignInWithGoogle={handleSignInWithGoogle}
+        onSignOut={handleSignOut}
+        isAuthLoading={isAuthLoading}
       />
 
       {/* Main Content Area */}
@@ -567,6 +703,21 @@ ${idea.notes ? `\nCATATAN SISWA:\n${idea.notes}` : ''}`;
                     <Database className="w-3 h-3" />
                     <span>Server Database: Aktif (Hosting Gratis)</span>
                   </div>
+                  {currentUser ? (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-950/70 text-purple-300 border border-purple-500/40 text-[11px] font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+                      <ShieldCheck className="w-3 h-3 text-purple-400" />
+                      <span>Token Google: {currentUser.displayName || currentUser.email}</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleSignInWithGoogle}
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-semibold transition-all active:scale-95"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                      <span>Login Google untuk Sinkron Akun</span>
+                    </button>
+                  )}
                   {isSyncingDb && (
                     <span className="text-[11px] text-slate-400 animate-pulse flex items-center gap-1">
                       <Server className="w-3 h-3 text-indigo-400" />
