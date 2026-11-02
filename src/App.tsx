@@ -547,10 +547,6 @@ ${idea.notes ? `\nCATATAN SISWA:\n${idea.notes}` : ''}`;
         savedSessionsCount={savedSessions.length}
         onResetSession={handleResetSession}
         onOpenAiModal={() => setIsAiModalOpen(true)}
-        currentUser={currentUser}
-        onSignInWithGoogle={handleSignInWithGoogle}
-        onSignOut={handleSignOut}
-        isAuthLoading={isAuthLoading}
       />
 
       {/* Main Content Area */}
@@ -703,21 +699,6 @@ ${idea.notes ? `\nCATATAN SISWA:\n${idea.notes}` : ''}`;
                     <Database className="w-3 h-3" />
                     <span>Server Database: Aktif (Hosting Gratis)</span>
                   </div>
-                  {currentUser ? (
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-950/70 text-purple-300 border border-purple-500/40 text-[11px] font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
-                      <ShieldCheck className="w-3 h-3 text-purple-400" />
-                      <span>Token Google: {currentUser.displayName || currentUser.email}</span>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={handleSignInWithGoogle}
-                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-semibold transition-all active:scale-95"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                      <span>Login Google untuk Sinkron Akun</span>
-                    </button>
-                  )}
                   {isSyncingDb && (
                     <span className="text-[11px] text-slate-400 animate-pulse flex items-center gap-1">
                       <Server className="w-3 h-3 text-indigo-400" />

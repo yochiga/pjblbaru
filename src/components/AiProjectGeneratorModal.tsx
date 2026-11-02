@@ -293,47 +293,18 @@ export function AiProjectGeneratorModal({
                 </div>
               </div>
 
-              {/* Status Token Akun Pengguna & Opsi Kunci Pribadi */}
+              {/* Opsi Kunci API Gemini Tambahan (Opsional) */}
               <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    {auth.currentUser?.photoURL ? (
-                      <img
-                        src={auth.currentUser.photoURL}
-                        alt="User"
-                        className="w-5 h-5 rounded-full object-cover border border-emerald-500"
-                      />
-                    ) : (
-                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    )}
-                    <span className="text-slate-300">
-                      Token Pengguna:{' '}
-                      <strong className="text-white">
-                        {auth.currentUser?.displayName || auth.currentUser?.email || 'Akun Default Sistem'}
-                      </strong>
-                    </span>
-                  </div>
-                  {auth.currentUser ? (
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
-                      Akun Google Aktif
-                    </span>
-                  ) : (
-                    <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[10px]">
-                      Mode Tamu
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
+                <div className="flex items-center justify-between">
                   <button
                     type="button"
                     onClick={() => setShowKeyInput(!showKeyInput)}
-                    className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                    className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-medium"
                   >
-                    <span>{showKeyInput ? 'Sembunyikan' : 'Gunakan Token / API Key Gemini Pribadi'}</span>
+                    <span>{showKeyInput ? 'Sembunyikan' : 'Gunakan API Key Gemini Kustom (Opsional)'}</span>
                   </button>
                   {customApiKey && (
-                    <span className="text-[10px] text-emerald-400 font-mono">Kunci kustom terpasang</span>
+                    <span className="text-[10px] text-emerald-400 font-mono">Kunci kustom aktif</span>
                   )}
                 </div>
 
@@ -347,7 +318,7 @@ export function AiProjectGeneratorModal({
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     />
                     <p className="text-[10px] text-slate-500">
-                      Opsional: Token ini akan digunakan secara langsung untuk kuota akun pribadi Anda.
+                      Opsional: Masukkan jika Anda ingin menggunakan kuota API Key pribadi. Jika dikosongkan, sistem otomatis menggunakan mesin kecerdasan kejuruan bawaan.
                     </p>
                   </div>
                 )}
