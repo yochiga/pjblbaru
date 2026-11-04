@@ -17,6 +17,7 @@ import { InteractiveJobsheetModal } from './components/InteractiveJobsheetModal'
 import { SavedSessionsDrawer } from './components/SavedSessionsDrawer';
 import { VocationBankView } from './components/VocationBankView';
 import { AiProjectGeneratorModal } from './components/AiProjectGeneratorModal';
+import { VocationalSimulationHub } from './components/VocationalSimulationHub';
 import {
   Sparkles,
   Briefcase,
@@ -68,8 +69,8 @@ export default function App() {
   // Current step in generator: 1 = Profession, 2 = Resources, 3 = Recommendations
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
 
-  // Active top navigation view: 'generator' | 'saved' | 'vocations' | 'inventory'
-  const [activeView, setActiveView] = useState<'generator' | 'saved' | 'vocations' | 'inventory'>('generator');
+  // Active top navigation view: 'generator' | 'saved' | 'vocations' | 'games' | 'inventory'
+  const [activeView, setActiveView] = useState<'generator' | 'saved' | 'vocations' | 'games' | 'inventory'>('generator');
 
   // Input State: Targeted Profession
   const [targetProfession, setTargetProfession] = useState<string>(() => {
@@ -1049,6 +1050,9 @@ ${idea.notes ? `\nCATATAN SISWA:\n${idea.notes}` : ''}`;
             }}
           />
         )}
+
+        {/* View: Game Simulasi Vokasi (Foto Produk & Sablon Kaos 2D) */}
+        {activeView === 'games' && <VocationalSimulationHub />}
       </main>
 
       {/* Floating Toast Notification */}

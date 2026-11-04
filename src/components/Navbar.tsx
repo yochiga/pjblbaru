@@ -5,11 +5,12 @@ import {
   FolderClock,
   BookOpen,
   RotateCcw,
+  Camera,
 } from 'lucide-react';
 
 interface NavbarProps {
-  activeView: 'generator' | 'saved' | 'vocations' | 'inventory';
-  setActiveView: (view: 'generator' | 'saved' | 'vocations' | 'inventory') => void;
+  activeView: 'generator' | 'saved' | 'vocations' | 'games' | 'inventory';
+  setActiveView: (view: 'generator' | 'saved' | 'vocations' | 'games' | 'inventory') => void;
   savedIdeasCount?: number;
   savedSessionsCount?: number;
   savedCount?: number;
@@ -133,6 +134,21 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>Bank Profesi & Kurikulum</span>
+          </button>
+
+          <button
+            onClick={() => setActiveView('games')}
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all whitespace-nowrap shrink-0 ${
+              activeView === 'games'
+                ? 'bg-gradient-to-r from-emerald-600 to-indigo-600 text-white shadow-md shadow-emerald-600/30 ring-1 ring-emerald-400'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+            <span>Game Simulasi Vokasi</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
+              2D Foto Produk
+            </span>
           </button>
         </nav>
       </div>
