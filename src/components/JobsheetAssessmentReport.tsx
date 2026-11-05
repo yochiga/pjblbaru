@@ -140,7 +140,7 @@ export const JobsheetAssessmentReport: React.FC<JobsheetAssessmentReportProps> =
         <div className="space-y-1.5">
           <div className="flex">
             <span className="w-36 font-semibold text-slate-600">Judul Proyek Praktik</span>
-            <span className="text-slate-900 font-bold">: {project.title}</span>
+            <span className="text-slate-900 font-bold">: {project.badgeEarned || project.title}</span>
           </div>
           <div className="flex">
             <span className="w-36 font-semibold text-slate-600">Tingkat Kesulitan / Jam</span>

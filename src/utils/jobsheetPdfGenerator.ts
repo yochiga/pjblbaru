@@ -80,9 +80,9 @@ export function generateAndDownloadJobsheetPdf({
       // Header mini pada halaman lanjutan
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(8);
-      doc.setTextColor(100, 116, 139);
+      const docHeaderTitle = project.badgeEarned || project.title;
       doc.text(
-        `Laporan Asesmen Jobsheet - ${project.title} (${studentName}) - Halaman ${doc.getNumberOfPages()}`,
+        `Laporan Asesmen Jobsheet - ${docHeaderTitle} (${studentName}) - Halaman ${doc.getNumberOfPages()}`,
         marginX,
         currentY - 4
       );
@@ -201,7 +201,8 @@ export function generateAndDownloadJobsheetPdf({
   doc.text('Judul Proyek', col2X, currentY + 5);
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
-  const shortTitle = project.title.length > 34 ? project.title.slice(0, 34) + '...' : project.title;
+  const projectTitleBadge = project.badgeEarned || project.title;
+  const shortTitle = projectTitleBadge.length > 40 ? projectTitleBadge.slice(0, 40) + '...' : projectTitleBadge;
   doc.text(`: ${shortTitle}`, col2X + 28, currentY + 5);
 
   doc.setFont('helvetica', 'normal');
@@ -603,7 +604,7 @@ export function generateAndDownloadJobsheetPdf({
   // ----------------------------------------------------
   // SIMPAN LANGSUNG KE BROWSER (DIRECT DOWNLOAD)
   // ----------------------------------------------------
-  const cleanProjectTitle = project.title.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30);
+  const cleanProjectTitle = (project.badgeEarned || project.title).replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30);
   const cleanStudentName = (studentName || 'Siswa').replace(/[^a-zA-Z0-9]/g, '_');
   const fileName = `Laporan_Asesmen_Jobsheet_${cleanProjectTitle}_${cleanStudentName}.pdf`;
 
