@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { RecommendedProject, ProjectStep } from '../types/recommender';
 import { JobsheetAssessmentReport } from './JobsheetAssessmentReport';
+import { generateAndDownloadJobsheetPdf } from '../utils/jobsheetPdfGenerator';
 import {
   X,
   CheckCircle2,
   AlertTriangle,
   Award,
   Clock,
-  Printer,
   ChevronRight,
   ChevronLeft,
   ShieldAlert,
@@ -43,6 +43,7 @@ export function InteractiveJobsheetModal({
   const [schoolName, setSchoolName] = useState('SMKN 4 Kendari');
   const [isSavedNotice, setIsSavedNotice] = useState(false);
   const [activeModalTab, setActiveModalTab] = useState<'steps' | 'report'>('steps');
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [teacherNotes, setTeacherNotes] = useState<string>(
     'Siswa menunjukkan kemandirian dan keterampilan yang sangat baik dalam menyelesaikan langkah kerja simulasi proyek ini. Protokol keselamatan kerja (K3) dipatuhi secara tertib, dan pemanfaatan bahan substitusi lokal memenuhi standar mutu kejuruan. Direkomendasikan untuk penyusunan portofolio mandiri.'
   );
@@ -158,27 +159,32 @@ export function InteractiveJobsheetModal({
     setTimeout(() => setIsSavedNotice(false), 2500);
   };
 
-  // Handler untuk menyimpan / mengunduh berkas PDF dengan penamaan otomatis
-  const handleSavePdf = () => {
-    const originalTitle = document.title;
-    const cleanProjectTitle = project.title.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30);
-    const cleanStudentName = (studentName || 'Siswa').replace(/[^a-zA-Z0-9]/g, '_');
-    document.title = `Laporan_Asesmen_Jobsheet_${cleanProjectTitle}_${cleanStudentName}`;
-    window.print();
-    setTimeout(() => {
-      document.title = originalTitle;
-    }, 1500);
-  };
-
-  // Handler untuk mencetak langsung dokumen fisik ke printer
-  const handlePrint = () => {
-    window.print();
+  // Handler untuk mengunduh langsung berkas PDF laporan ke browser
+  const handleDownloadPdf = () => {
+    setIsDownloadingPdf(true);
+    try {
+      generateAndDownloadJobsheetPdf({
+        project,
+        steps,
+        completedSteps,
+        studentName,
+        schoolName,
+        studentNotes,
+        teacherNotes,
+      });
+      setIsSavedNotice(true);
+      setTimeout(() => setIsSavedNotice(false), 3000);
+    } catch (err) {
+      console.error('Gagal mengunduh berkas PDF:', err);
+    } finally {
+      setIsDownloadingPdf(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 md:p-6 animate-fadeIn print:static print:inset-auto print:z-0 print:overflow-visible print:bg-white print:p-0 print:m-0 print:block">
-      {/* SCREEN MODAL DIALOG (HIDDEN DURING PRINT) */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[92vh] print:hidden">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 md:p-6 animate-fadeIn">
+      {/* SCREEN MODAL DIALOG */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[92vh]">
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border-b border-slate-800 p-4 sm:p-5 md:p-6 flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -200,18 +206,12 @@ export function InteractiveJobsheetModal({
 
           <div className="flex items-center gap-1.5 shrink-0">
             <button
-              onClick={handleSavePdf}
-              className="p-2 text-emerald-400 hover:text-white bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 rounded-lg transition-colors print:hidden"
-              title="Simpan Laporan & Rubrik ke Berkas PDF"
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              className="p-2 text-emerald-400 hover:text-white bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 rounded-lg transition-colors disabled:opacity-50"
+              title="Unduh Berkas PDF Laporan & Rubrik Langsung ke Browser"
             >
               <Download className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handlePrint}
-              className="p-2 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors print:hidden"
-              title="Cetak Dokumen Fisik ke Printer"
-            >
-              <Printer className="w-4 h-4" />
             </button>
             <button
               onClick={onClose}
@@ -264,28 +264,21 @@ export function InteractiveJobsheetModal({
                 <div className="space-y-1">
                   <span className="font-bold text-white flex items-center gap-1.5">
                     <FileText className="w-4 h-4 text-emerald-400" />
-                    Format Laporan Asesmen & Rubrik Penilaian Terstruktur (Siap Cetak / Unduh PDF)
+                    Format Laporan Asesmen & Rubrik Penilaian Terstruktur (Unduh PDF Langsung)
                   </span>
                   <p className="text-slate-300 text-[11px] leading-relaxed">
-                    Dokumen ini memuat persentase keberhasilan ({Math.round(((completedSteps.length / (totalSteps || 1)) * 100))}% tuntas), rincian rubrik berbobot (K3, Proses Praktik, Mutu Hasil Produk, Efisiensi Waktu), catatan pengamatan guru, serta lembar pengesahan tanda tangan. Anda dapat mengedit catatan guru langsung sebelum mencetak.
+                    Dokumen ini memuat persentase keberhasilan ({Math.round(((completedSteps.length / (totalSteps || 1)) * 100))}% tuntas), rincian rubrik berbobot (K3, Proses Praktik, Mutu Hasil Produk, Efisiensi Waktu), catatan pengamatan guru, serta lembar pengesahan tanda tangan. Anda dapat mengedit catatan guru langsung sebelum mengunduh berkas PDF.
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button
-                    onClick={handleSavePdf}
-                    className="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
-                    title="Simpan dokumen laporan dan rubrik ke berkas PDF"
+                    onClick={handleDownloadPdf}
+                    disabled={isDownloadingPdf}
+                    className="px-4 py-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-600/30 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    title="Unduh berkas PDF laporan asesmen dan rubrik penilaian langsung ke browser"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    <span>Simpan PDF</span>
-                  </button>
-                  <button
-                    onClick={handlePrint}
-                    className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5"
-                    title="Cetak lembar laporan fisik langsung ke mesin printer"
-                  >
-                    <Printer className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Cetak Dokumen</span>
+                    <span>{isDownloadingPdf ? 'Mengunduh...' : 'Unduh Laporan PDF'}</span>
                   </button>
                 </div>
               </div>
@@ -699,24 +692,15 @@ export function InteractiveJobsheetModal({
               </button>
             )}
 
-            {/* BUTTON 1: Simpan PDF */}
+            {/* Tombol Unduh Laporan PDF Langsung ke Browser */}
             <button
-              onClick={handleSavePdf}
-              className="px-4 py-2.5 sm:py-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/25 transition-all flex items-center justify-center gap-1.5 min-h-[42px] sm:min-h-0"
-              title="Simpan dokumen laporan persentase keberhasilan, rubrik penilaian, dan catatan guru ke berkas PDF"
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              className="px-4 py-2.5 sm:py-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/25 transition-all flex items-center justify-center gap-1.5 min-h-[42px] sm:min-h-0 disabled:opacity-50"
+              title="Unduh berkas PDF laporan persentase keberhasilan, rubrik penilaian, dan catatan guru langsung ke browser"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Simpan PDF</span>
-            </button>
-
-            {/* BUTTON 2: Cetak Dokumen (Print) */}
-            <button
-              onClick={handlePrint}
-              className="px-4 py-2.5 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-1.5 min-h-[42px] sm:min-h-0"
-              title="Cetak lembar laporan dan rubrik langsung ke mesin printer fisik"
-            >
-              <Printer className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Cetak (Print)</span>
+              <span>{isDownloadingPdf ? 'Mengunduh...' : 'Unduh Laporan PDF'}</span>
             </button>
 
             <button
@@ -727,20 +711,6 @@ export function InteractiveJobsheetModal({
             </button>
           </div>
         </div>
-      </div>
-
-      {/* DEDICATED PRINT-ONLY CONTAINER (VISIBLE DURING PRINT / EXPORT TO PDF) */}
-      <div className="hidden print:block w-full bg-white text-slate-900 p-0 m-0">
-        <JobsheetAssessmentReport
-          project={project}
-          steps={steps}
-          completedSteps={completedSteps}
-          studentName={studentName}
-          schoolName={schoolName}
-          studentNotes={studentNotes}
-          teacherNotes={teacherNotes}
-          isEditableOnScreen={false}
-        />
       </div>
     </div>
   );
