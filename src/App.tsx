@@ -18,6 +18,7 @@ import { SavedSessionsDrawer } from './components/SavedSessionsDrawer';
 import { VocationBankView } from './components/VocationBankView';
 import { AiProjectGeneratorModal } from './components/AiProjectGeneratorModal';
 import { VocationalSimulationHub } from './components/VocationalSimulationHub';
+import { TutorialModal } from './components/TutorialModal';
 import {
   Sparkles,
   Briefcase,
@@ -41,6 +42,7 @@ import {
   Database,
   Server,
   ShieldCheck,
+  HelpCircle,
 } from 'lucide-react';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import {
@@ -138,6 +140,7 @@ export default function App() {
   // Drawer & modal status
   const [isSavedDrawerOpen, setIsSavedDrawerOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
 
   // Authentication State: Google Account
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -548,6 +551,7 @@ ${idea.notes ? `\nCATATAN SISWA:\n${idea.notes}` : ''}`;
         savedSessionsCount={savedSessions.length}
         onResetSession={handleResetSession}
         onOpenAiModal={() => setIsAiModalOpen(true)}
+        onOpenTutorial={() => setIsTutorialOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -643,6 +647,30 @@ ${idea.notes ? `\nCATATAN SISWA:\n${idea.notes}` : ''}`;
                   {currentStep === 3 && '🚀 Langkah 3: Simulasi Proyek & Panduan Jobsheet'}
                 </span>
               </div>
+            </div>
+
+            {/* Quick Tutorial Tip Banner */}
+            <div className="bg-gradient-to-r from-indigo-950/40 via-purple-950/30 to-emerald-950/40 border border-indigo-500/20 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shrink-0">
+                  <HelpCircle className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div>
+                  <span className="font-bold text-white block">
+                    Baru di Aplikasi SimulasiVokasi?
+                  </span>
+                  <span className="text-slate-400 text-[11px]">
+                    Pelajari alur 4 langkah perancangan proyek, game 2D (Foto Produk & Sablon Kaos), serta format laporan PDF resmi.
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsTutorialOpen(true)}
+                className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 shadow-sm shrink-0"
+              >
+                <span>Buka Tutorial</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
 
             {/* Step Contents */}
@@ -1100,6 +1128,33 @@ ${idea.notes ? `\nCATATAN SISWA:\n${idea.notes}` : ''}`;
         sessions={savedSessions}
         onSelectSession={handleRestoreSession}
         onDeleteSession={handleDeleteSession}
+      />
+
+      {/* Floating Tutorial & Help Trigger Button */}
+      <button
+        onClick={() => setIsTutorialOpen(true)}
+        className="fixed bottom-5 right-5 z-40 bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white p-3 sm:px-4 sm:py-2.5 rounded-full sm:rounded-2xl shadow-xl shadow-emerald-950/80 border border-emerald-400/40 flex items-center gap-2 group transition-all transform hover:scale-105 active:scale-95"
+        title="Buka Pusat Tutorial & Panduan Penggunaan Aplikasi"
+        aria-label="Buka Tutorial Penggunaan Aplikasi"
+      >
+        <div className="w-5 h-5 flex items-center justify-center">
+          <HelpCircle className="w-5 h-5 text-emerald-200 group-hover:rotate-12 transition-transform" />
+        </div>
+        <div className="hidden sm:flex flex-col text-left leading-tight">
+          <span className="text-xs font-bold text-white">Tutorial Aplikasi</span>
+          <span className="text-[10px] text-emerald-200">Panduan Praktis</span>
+        </div>
+      </button>
+
+      {/* Modal Tutorial & Panduan Penggunaan */}
+      <TutorialModal
+        isOpen={isTutorialOpen}
+        onClose={() => setIsTutorialOpen(false)}
+        onNavigateToView={(view, step) => {
+          setActiveView(view);
+          if (step) setCurrentStep(step);
+        }}
+        onOpenAiGenerator={() => setIsAiModalOpen(true)}
       />
 
       {/* Footer */}
