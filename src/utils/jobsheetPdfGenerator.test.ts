@@ -62,6 +62,8 @@ describe('Jobsheet PDF Generator', () => {
       studentClass: 'XI TBSM 2',
       workDate: '2026-11-15',
       schoolName: 'SMKN 4 Kendari',
+      subjectName: 'Pemeliharaan Sasis Sepeda Motor',
+      subjectTopic: 'Sistem Rem Hidrolik & Bleeding',
       studentNotes: 'Rem berfungsi normal.',
       teacherNotes: 'Sangat baik dan teliti.',
     });
@@ -72,5 +74,7 @@ describe('Jobsheet PDF Generator', () => {
     assert.ok(internalText.includes('Budi Santoso'));
     assert.ok(internalText.includes('XI TBSM 2'));
     assert.ok(internalText.includes('15 November 2026'));
+    assert.ok(internalText.includes('Pemeliharaan Sasis Sepeda Moto'));
+    assert.ok(internalText.includes('Sistem Rem Hidrolik'));
   });
 });

@@ -9,6 +9,8 @@ export interface GeneratePdfOptions {
   studentClass?: string;
   workDate?: string;
   schoolName: string;
+  subjectName?: string;
+  subjectTopic?: string;
   studentNotes: string;
   teacherNotes: string;
 }
@@ -49,6 +51,8 @@ export function buildJobsheetPdfDocument({
   studentClass,
   workDate,
   schoolName,
+  subjectName,
+  subjectTopic,
   studentNotes,
   teacherNotes,
 }: GeneratePdfOptions): jsPDF {
@@ -191,7 +195,7 @@ export function buildJobsheetPdfDocument({
   // ----------------------------------------------------
   doc.setDrawColor(203, 213, 225);
   doc.setFillColor(248, 250, 252);
-  doc.roundedRect(marginX, currentY, contentWidth, 27.5, 1.5, 1.5, 'FD');
+  doc.roundedRect(marginX, currentY, contentWidth, 32, 1.5, 1.5, 'FD');
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
@@ -199,19 +203,22 @@ export function buildJobsheetPdfDocument({
   const col1X = marginX + 3;
   const col2X = marginX + contentWidth / 2 + 2;
 
+  const truncateText = (value: string, maxLen: number) =>
+    value.length > maxLen ? value.slice(0, maxLen) + '...' : value;
+
   // Kolom Kiri
   doc.setTextColor(100, 116, 139);
   doc.text('Nama Siswa Praktikan', col1X, currentY + 5);
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
-  doc.text(`: ${studentName || 'Siswa Vokasi'}`, col1X + 34, currentY + 5);
+  doc.text(`: ${truncateText(studentName || 'Siswa Vokasi', 30)}`, col1X + 34, currentY + 5);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 116, 139);
   doc.text('Kelas Siswa', col1X, currentY + 9.5);
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
-  doc.text(`: ${studentClass || '-'}`, col1X + 34, currentY + 9.5);
+  doc.text(`: ${truncateText(studentClass || '-', 30)}`, col1X + 34, currentY + 9.5);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 116, 139);
@@ -222,17 +229,19 @@ export function buildJobsheetPdfDocument({
   doc.setTextColor(100, 116, 139);
   doc.text('Satuan Pendidikan', col1X, currentY + 18.5);
   doc.setTextColor(15, 23, 42);
-  doc.text(`: ${schoolName}`, col1X + 34, currentY + 18.5);
+  doc.text(`: ${truncateText(schoolName || 'SMKN 4 Kendari', 30)}`, col1X + 34, currentY + 18.5);
 
   doc.setTextColor(100, 116, 139);
-  doc.text('Profesi / Kejuruan', col1X, currentY + 23);
-  doc.setTextColor(30, 27, 75);
+  doc.text('Mata Pelajaran', col1X, currentY + 23);
+  doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
-  const shortProf =
-    project.targetProfession.length > 34
-      ? project.targetProfession.slice(0, 34) + '...'
-      : project.targetProfession;
-  doc.text(`: ${shortProf}`, col1X + 34, currentY + 23);
+  doc.text(`: ${truncateText(subjectName?.trim() || '-', 30)}`, col1X + 34, currentY + 23);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 116, 139);
+  doc.text('Materi Pembelajaran', col1X, currentY + 27.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`: ${truncateText(subjectTopic?.trim() || '-', 30)}`, col1X + 34, currentY + 27.5);
 
   // Kolom Kanan
   doc.setFont('helvetica', 'normal');
@@ -241,28 +250,33 @@ export function buildJobsheetPdfDocument({
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
   const projectTitleBadge = project.badgeEarned || project.title;
-  const shortTitle = projectTitleBadge.length > 40 ? projectTitleBadge.slice(0, 40) + '...' : projectTitleBadge;
-  doc.text(`: ${shortTitle}`, col2X + 28, currentY + 5);
+  doc.text(`: ${truncateText(projectTitleBadge, 34)}`, col2X + 28, currentY + 5);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 116, 139);
-  doc.text('Tingkat & Waktu', col2X, currentY + 9.5);
+  doc.text('Profesi / Kejuruan', col2X, currentY + 9.5);
+  doc.setTextColor(30, 27, 75);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`: ${truncateText(project.targetProfession, 32)}`, col2X + 28, currentY + 9.5);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 116, 139);
+  doc.text('Tingkat & Waktu', col2X, currentY + 14);
   doc.setTextColor(15, 23, 42);
-  doc.text(`: ${project.difficulty} • ${project.estimatedHours}`, col2X + 28, currentY + 9.5);
+  doc.text(`: ${project.difficulty} • ${project.estimatedHours}`, col2X + 28, currentY + 14);
 
   doc.setTextColor(100, 116, 139);
-  doc.text('Luaran Produk', col2X, currentY + 14);
+  doc.text('Luaran Produk', col2X, currentY + 18.5);
   doc.setTextColor(15, 23, 42);
-  const shortDeliv = project.deliverable.length > 34 ? project.deliverable.slice(0, 34) + '...' : project.deliverable;
-  doc.text(`: ${shortDeliv}`, col2X + 28, currentY + 14);
+  doc.text(`: ${truncateText(project.deliverable, 32)}`, col2X + 28, currentY + 18.5);
 
   doc.setTextColor(100, 116, 139);
-  doc.text('Lencana Kompetensi', col2X, currentY + 18.5);
+  doc.text('Lencana Kompetensi', col2X, currentY + 23);
   doc.setTextColor(67, 56, 202);
   doc.setFont('helvetica', 'bold');
-  doc.text(`: ${project.badgeEarned}`, col2X + 28, currentY + 18.5);
+  doc.text(`: ${truncateText(project.badgeEarned, 32)}`, col2X + 28, currentY + 23);
 
-  currentY += 31.5;
+  currentY += 36;
 
   // ----------------------------------------------------
   // 3. BAGIAN I: LAPORAN PERSENTASE KEBERHASILAN (SUCCESS RATE)

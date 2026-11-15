@@ -53,6 +53,8 @@ function InteractiveJobsheetModalContent({
     return `${year}-${month}-${day}`;
   });
   const [schoolName, setSchoolName] = useState('SMKN 4 Kendari');
+  const [subjectName, setSubjectName] = useState('Produktif Kejuruan');
+  const [subjectTopic, setSubjectTopic] = useState(project.title);
   const [isSavedNotice, setIsSavedNotice] = useState(false);
   const [activeModalTab, setActiveModalTab] = useState<'steps' | 'report'>('steps');
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
@@ -74,10 +76,11 @@ function InteractiveJobsheetModalContent({
   // Sinkronisasi jika proyek berganti
   useEffect(() => {
     setSteps(project.steps);
+    setSubjectTopic(project.title);
     setCompletedSteps([]);
     setCurrentStepIndex(0);
     setIsEditingStep(false);
-  }, [project.id]);
+  }, [project.id, project.title, project.steps]);
 
   const totalSteps = steps.length;
   const currentStep = steps[currentStepIndex];
@@ -183,6 +186,8 @@ function InteractiveJobsheetModalContent({
         studentClass,
         workDate,
         schoolName,
+        subjectName,
+        subjectTopic,
         studentNotes,
         teacherNotes,
       });
@@ -307,6 +312,8 @@ function InteractiveJobsheetModalContent({
                   studentClass={studentClass}
                   workDate={workDate}
                   schoolName={schoolName}
+                  subjectName={subjectName}
+                  subjectTopic={subjectTopic}
                   studentNotes={studentNotes}
                   teacherNotes={teacherNotes}
                   onTeacherNotesChange={setTeacherNotes}
@@ -366,6 +373,32 @@ function InteractiveJobsheetModalContent({
                 value={schoolName}
                 onChange={(e) => setSchoolName(e.target.value)}
                 placeholder="Nama SMK / Instansi..."
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="jobsheet-subject-name" className="text-slate-400 block mb-1">
+                Mata Pelajaran:
+              </label>
+              <input
+                id="jobsheet-subject-name"
+                type="text"
+                value={subjectName}
+                onChange={(e) => setSubjectName(e.target.value)}
+                placeholder="Contoh: Pemeliharaan Mesin / Desain Komunikasi Visual"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="jobsheet-subject-topic" className="text-slate-400 block mb-1">
+                Materi Pembelajaran:
+              </label>
+              <input
+                id="jobsheet-subject-topic"
+                type="text"
+                value={subjectTopic}
+                onChange={(e) => setSubjectTopic(e.target.value)}
+                placeholder="Contoh: Sistem Pengereman Hidrolik / Fotografi Produk"
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
             </div>
@@ -718,25 +751,25 @@ function InteractiveJobsheetModalContent({
 
         {/* Modal Footer */}
         <div className="bg-slate-950 border-t border-slate-800 p-3.5 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <div className="text-xs text-slate-400 text-center sm:text-left">
+          <div className="text-xs text-slate-400 text-center sm:text-left min-w-0">
             Output: <strong className="text-slate-200">{project.deliverable}</strong>
           </div>
-          <div className="flex flex-col xs:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-col xs:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
             {activeModalTab === 'steps' ? (
               <button
                 onClick={() => setActiveModalTab('report')}
-                className="px-3.5 py-2.5 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition-colors flex items-center justify-center gap-1.5 min-h-[42px] sm:min-h-0"
+                className="px-3.5 py-2.5 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition-colors flex items-center justify-center gap-1.5 min-h-[42px] sm:min-h-0 whitespace-nowrap"
                 title="Lihat format dokumen laporan persentase keberhasilan & rubrik penilaian resmi"
               >
-                <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                <FileText className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <span>Lihat Format Laporan PDF</span>
               </button>
             ) : (
               <button
                 onClick={() => setActiveModalTab('steps')}
-                className="px-3.5 py-2.5 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition-colors flex items-center justify-center gap-1.5 min-h-[42px] sm:min-h-0"
+                className="px-3.5 py-2.5 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition-colors flex items-center justify-center gap-1.5 min-h-[42px] sm:min-h-0 whitespace-nowrap"
               >
-                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span>Kembali ke Langkah Kerja</span>
               </button>
             )}
@@ -745,16 +778,16 @@ function InteractiveJobsheetModalContent({
             <button
               onClick={handleDownloadPdf}
               disabled={isDownloadingPdf}
-              className="px-4 py-2.5 sm:py-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/25 transition-all flex items-center justify-center gap-1.5 min-h-[42px] sm:min-h-0 disabled:opacity-50"
+              className="px-4 py-2.5 sm:py-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl shadow-md shadow-emerald-600/25 transition-all flex items-center justify-center gap-1.5 min-h-[42px] sm:min-h-0 whitespace-nowrap disabled:opacity-50"
               title="Unduh berkas PDF laporan persentase keberhasilan, rubrik penilaian, dan catatan guru langsung ke browser"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5 shrink-0" />
               <span>{isDownloadingPdf ? 'Mengunduh...' : 'Unduh Laporan PDF'}</span>
             </button>
 
             <button
               onClick={onClose}
-              className="px-4 py-2.5 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 transition-colors flex items-center justify-center min-h-[42px] sm:min-h-0"
+              className="px-4 py-2.5 sm:py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl border border-slate-700 transition-colors flex items-center justify-center min-h-[42px] sm:min-h-0 whitespace-nowrap"
             >
               Tutup
             </button>

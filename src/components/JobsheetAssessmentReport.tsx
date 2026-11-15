@@ -22,6 +22,8 @@ interface JobsheetAssessmentReportProps {
   studentClass?: string;
   workDate?: string;
   schoolName: string;
+  subjectName?: string;
+  subjectTopic?: string;
   studentNotes: string;
   teacherNotes: string;
   onTeacherNotesChange?: (val: string) => void;
@@ -36,6 +38,8 @@ export const JobsheetAssessmentReport: React.FC<JobsheetAssessmentReportProps> =
   studentClass,
   workDate,
   schoolName,
+  subjectName,
+  subjectTopic,
   studentNotes,
   teacherNotes,
   onTeacherNotesChange,
@@ -121,42 +125,50 @@ export const JobsheetAssessmentReport: React.FC<JobsheetAssessmentReportProps> =
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200 print:bg-transparent print:border-slate-800">
         <div className="space-y-1.5">
           <div className="flex">
-            <span className="w-36 font-semibold text-slate-600">Nama Siswa Praktikan</span>
+            <span className="w-40 shrink-0 font-semibold text-slate-600">Nama Siswa Praktikan</span>
             <span className="text-slate-900 font-bold">: {studentName || 'Siswa Vokasi'}</span>
           </div>
           <div className="flex">
-            <span className="w-36 font-semibold text-slate-600">Kelas Siswa</span>
+            <span className="w-40 shrink-0 font-semibold text-slate-600">Kelas Siswa</span>
             <span className="text-slate-900 font-bold">: {studentClass || '-'}</span>
           </div>
           <div className="flex">
-            <span className="w-36 font-semibold text-slate-600">Tanggal Pengerjaan</span>
+            <span className="w-40 shrink-0 font-semibold text-slate-600">Tanggal Pengerjaan</span>
             <span className="text-slate-900">: {formattedWorkDate}</span>
           </div>
           <div className="flex">
-            <span className="w-36 font-semibold text-slate-600">Satuan Pendidikan</span>
+            <span className="w-40 shrink-0 font-semibold text-slate-600">Satuan Pendidikan</span>
             <span className="text-slate-900 font-bold">: {schoolName || 'SMKN 4 Kendari'}</span>
           </div>
           <div className="flex">
-            <span className="w-36 font-semibold text-slate-600">Profesi / Kejuruan Target</span>
-            <span className="text-slate-900 font-bold">: {project.targetProfession}</span>
+            <span className="w-40 shrink-0 font-semibold text-slate-600">Mata Pelajaran</span>
+            <span className="text-slate-900 font-bold">: {subjectName?.trim() || '-'}</span>
+          </div>
+          <div className="flex">
+            <span className="w-40 shrink-0 font-semibold text-slate-600">Materi Pembelajaran</span>
+            <span className="text-slate-900 font-medium">: {subjectTopic?.trim() || '-'}</span>
           </div>
         </div>
 
         <div className="space-y-1.5">
           <div className="flex">
-            <span className="w-36 font-semibold text-slate-600">Judul Proyek Praktik</span>
+            <span className="w-40 shrink-0 font-semibold text-slate-600">Profesi / Kejuruan Target</span>
+            <span className="text-slate-900 font-bold">: {project.targetProfession}</span>
+          </div>
+          <div className="flex">
+            <span className="w-40 shrink-0 font-semibold text-slate-600">Judul Proyek Praktik</span>
             <span className="text-slate-900 font-bold">: {project.badgeEarned || project.title}</span>
           </div>
           <div className="flex">
-            <span className="w-36 font-semibold text-slate-600">Tingkat Kesulitan / Jam</span>
+            <span className="w-40 shrink-0 font-semibold text-slate-600">Tingkat Kesulitan / Jam</span>
             <span className="text-slate-900">: {project.difficulty} • {project.estimatedHours}</span>
           </div>
           <div className="flex">
-            <span className="w-36 font-semibold text-slate-600">Luaran Karya (Deliverable)</span>
+            <span className="w-40 shrink-0 font-semibold text-slate-600">Luaran Karya (Deliverable)</span>
             <span className="text-slate-900 font-medium">: {project.deliverable}</span>
           </div>
           <div className="flex">
-            <span className="w-36 font-semibold text-slate-600">Lencana Kompetensi</span>
+            <span className="w-40 shrink-0 font-semibold text-slate-600">Lencana Kompetensi</span>
             <span className="text-indigo-800 font-bold">: {project.badgeEarned}</span>
           </div>
         </div>
