@@ -12,12 +12,15 @@ import {
   Percent,
   BookmarkCheck,
 } from 'lucide-react';
+import { formatWorkDateIndonesian } from '../utils/jobsheetPdfGenerator';
 
 interface JobsheetAssessmentReportProps {
   project: RecommendedProject;
   steps: ProjectStep[];
   completedSteps: number[];
   studentName: string;
+  studentClass?: string;
+  workDate?: string;
   schoolName: string;
   studentNotes: string;
   teacherNotes: string;
@@ -30,6 +33,8 @@ export const JobsheetAssessmentReport: React.FC<JobsheetAssessmentReportProps> =
   steps,
   completedSteps,
   studentName,
+  studentClass,
+  workDate,
   schoolName,
   studentNotes,
   teacherNotes,
@@ -75,11 +80,7 @@ export const JobsheetAssessmentReport: React.FC<JobsheetAssessmentReportProps> =
     kktpStatus = 'BELUM TUNTAS (PERLU PENDAMPINGAN)';
   }
 
-  const currentDate = new Date().toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  const formattedWorkDate = formatWorkDateIndonesian(workDate);
 
   return (
     <div className="bg-white text-slate-900 font-sans p-6 sm:p-10 rounded-2xl shadow-sm border border-slate-200 print:border-none print:shadow-none print:p-0 print:m-0 w-full max-w-4xl mx-auto space-y-6">
@@ -124,16 +125,20 @@ export const JobsheetAssessmentReport: React.FC<JobsheetAssessmentReportProps> =
             <span className="text-slate-900 font-bold">: {studentName || 'Siswa Vokasi'}</span>
           </div>
           <div className="flex">
+            <span className="w-36 font-semibold text-slate-600">Kelas Siswa</span>
+            <span className="text-slate-900 font-bold">: {studentClass || '-'}</span>
+          </div>
+          <div className="flex">
+            <span className="w-36 font-semibold text-slate-600">Tanggal Pengerjaan</span>
+            <span className="text-slate-900">: {formattedWorkDate}</span>
+          </div>
+          <div className="flex">
             <span className="w-36 font-semibold text-slate-600">Satuan Pendidikan</span>
             <span className="text-slate-900 font-bold">: {schoolName || 'SMKN 4 Kendari'}</span>
           </div>
           <div className="flex">
             <span className="w-36 font-semibold text-slate-600">Profesi / Kejuruan Target</span>
             <span className="text-slate-900 font-bold">: {project.targetProfession}</span>
-          </div>
-          <div className="flex">
-            <span className="w-36 font-semibold text-slate-600">Tanggal Pelaksanaan</span>
-            <span className="text-slate-900">: {currentDate}</span>
           </div>
         </div>
 
@@ -440,7 +445,7 @@ export const JobsheetAssessmentReport: React.FC<JobsheetAssessmentReportProps> =
       {/* ---------------------------------------------------- */}
       <div className="pt-4 border-t-2 border-slate-800 space-y-3 print-page-break-avoid">
         <div className="text-right text-xs text-slate-700 font-medium">
-          Ditetapkan di: <strong>Kendari</strong>, Tanggal: <strong>{currentDate}</strong>
+          Ditetapkan di: <strong>Kendari</strong>, Tanggal: <strong>{formattedWorkDate}</strong>
         </div>
 
         <div className="grid grid-cols-3 gap-4 text-center text-xs text-slate-900 pt-2">

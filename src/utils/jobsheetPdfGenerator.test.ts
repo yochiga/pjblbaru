@@ -1,10 +1,25 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { generateAndDownloadJobsheetPdf } from './jobsheetPdfGenerator';
+import {
+  generateAndDownloadJobsheetPdf,
+  buildJobsheetPdfDocument,
+  formatWorkDateIndonesian,
+} from './jobsheetPdfGenerator';
 import { RecommendedProject } from '../types/recommender';
 
 describe('Jobsheet PDF Generator', () => {
-  it('instantiates and builds structured PDF without errors', () => {
+  it('formats YYYY-MM-DD work dates cleanly in Indonesian without timezone shift', () => {
+    const formatted = formatWorkDateIndonesian('2026-11-15');
+    assert.strictEqual(formatted, '15 November 2026');
+
+    const fallback = formatWorkDateIndonesian('');
+    assert.ok(fallback.length > 5);
+
+    const invalidFallback = formatWorkDateIndonesian('2026-02-31');
+    assert.ok(invalidFallback.length > 5);
+  });
+
+  it('instantiates and builds structured PDF with studentClass and workDate without errors', () => {
     const mockProject: RecommendedProject = {
       id: 'proj-test-1',
       title: 'Praktek Perbaikan Sistem Rem Cakram Sepeda Motor',
@@ -37,8 +52,25 @@ describe('Jobsheet PDF Generator', () => {
       ],
     };
 
-    // Dalam environment node (tanpa browser window), doc.save memanggil fs atau blob url jika disupport,
-    // atau kita pastikan fungsi tidak crash saat dipanggil.
     assert.strictEqual(typeof generateAndDownloadJobsheetPdf, 'function');
+
+    const doc = buildJobsheetPdfDocument({
+      project: mockProject,
+      steps: mockProject.steps,
+      completedSteps: [0, 1],
+      studentName: 'Budi Santoso',
+      studentClass: 'XI TBSM 2',
+      workDate: '2026-11-15',
+      schoolName: 'SMKN 4 Kendari',
+      studentNotes: 'Rem berfungsi normal.',
+      teacherNotes: 'Sangat baik dan teliti.',
+    });
+
+    const rawPdf = doc.output('datauristring');
+    assert.ok(rawPdf.startsWith('data:application/pdf'));
+    const internalText = JSON.stringify((doc as unknown as { internal: { pages: unknown } }).internal.pages);
+    assert.ok(internalText.includes('Budi Santoso'));
+    assert.ok(internalText.includes('XI TBSM 2'));
+    assert.ok(internalText.includes('15 November 2026'));
   });
 });

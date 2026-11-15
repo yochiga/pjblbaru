@@ -6,20 +6,52 @@ export interface GeneratePdfOptions {
   steps: ProjectStep[];
   completedSteps: number[];
   studentName: string;
+  studentClass?: string;
+  workDate?: string;
   schoolName: string;
   studentNotes: string;
   teacherNotes: string;
 }
 
-export function generateAndDownloadJobsheetPdf({
+export function formatWorkDateIndonesian(workDate?: string): string {
+  if (workDate && /^\d{4}-\d{2}-\d{2}$/.test(workDate.trim())) {
+    const [yearStr, monthStr, dayStr] = workDate.trim().split('-');
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+    const day = Number(dayStr);
+    const parsed = new Date(year, month - 1, day);
+    if (
+      !Number.isNaN(parsed.getTime()) &&
+      parsed.getFullYear() === year &&
+      parsed.getMonth() === month - 1 &&
+      parsed.getDate() === day
+    ) {
+      return parsed.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+    }
+  }
+
+  return new Date().toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+export function buildJobsheetPdfDocument({
   project,
   steps,
   completedSteps,
   studentName,
+  studentClass,
+  workDate,
   schoolName,
   studentNotes,
   teacherNotes,
-}: GeneratePdfOptions): void {
+}: GeneratePdfOptions): jsPDF {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -66,11 +98,7 @@ export function generateAndDownloadJobsheetPdf({
     kktpStatus = 'BELUM TUNTAS (PERLU PENDAMPINGAN)';
   }
 
-  const currentDate = new Date().toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  const formattedWorkDate = formatWorkDateIndonesian(workDate);
 
   // Helper check page overflow
   const ensureSpace = (neededHeight: number) => {
@@ -163,7 +191,7 @@ export function generateAndDownloadJobsheetPdf({
   // ----------------------------------------------------
   doc.setDrawColor(203, 213, 225);
   doc.setFillColor(248, 250, 252);
-  doc.roundedRect(marginX, currentY, contentWidth, 23, 1.5, 1.5, 'FD');
+  doc.roundedRect(marginX, currentY, contentWidth, 27.5, 1.5, 1.5, 'FD');
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
@@ -180,23 +208,34 @@ export function generateAndDownloadJobsheetPdf({
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 116, 139);
-  doc.text('Satuan Pendidikan', col1X, currentY + 9.5);
+  doc.text('Kelas Siswa', col1X, currentY + 9.5);
   doc.setTextColor(15, 23, 42);
-  doc.text(`: ${schoolName}`, col1X + 34, currentY + 9.5);
-
-  doc.setTextColor(100, 116, 139);
-  doc.text('Profesi / Kejuruan', col1X, currentY + 14);
-  doc.setTextColor(30, 27, 75);
   doc.setFont('helvetica', 'bold');
-  doc.text(`: ${project.targetProfession}`, col1X + 34, currentY + 14);
+  doc.text(`: ${studentClass || '-'}`, col1X + 34, currentY + 9.5);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 116, 139);
-  doc.text('Tanggal Asesmen', col1X, currentY + 18.5);
+  doc.text('Tanggal Pengerjaan', col1X, currentY + 14);
   doc.setTextColor(15, 23, 42);
-  doc.text(`: ${currentDate}`, col1X + 34, currentY + 18.5);
+  doc.text(`: ${formattedWorkDate}`, col1X + 34, currentY + 14);
+
+  doc.setTextColor(100, 116, 139);
+  doc.text('Satuan Pendidikan', col1X, currentY + 18.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`: ${schoolName}`, col1X + 34, currentY + 18.5);
+
+  doc.setTextColor(100, 116, 139);
+  doc.text('Profesi / Kejuruan', col1X, currentY + 23);
+  doc.setTextColor(30, 27, 75);
+  doc.setFont('helvetica', 'bold');
+  const shortProf =
+    project.targetProfession.length > 34
+      ? project.targetProfession.slice(0, 34) + '...'
+      : project.targetProfession;
+  doc.text(`: ${shortProf}`, col1X + 34, currentY + 23);
 
   // Kolom Kanan
+  doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 116, 139);
   doc.text('Judul Proyek', col2X, currentY + 5);
   doc.setTextColor(15, 23, 42);
@@ -223,7 +262,7 @@ export function generateAndDownloadJobsheetPdf({
   doc.setFont('helvetica', 'bold');
   doc.text(`: ${project.badgeEarned}`, col2X + 28, currentY + 18.5);
 
-  currentY += 27;
+  currentY += 31.5;
 
   // ----------------------------------------------------
   // 3. BAGIAN I: LAPORAN PERSENTASE KEBERHASILAN (SUCCESS RATE)
@@ -553,7 +592,7 @@ export function generateAndDownloadJobsheetPdf({
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7);
   doc.setTextColor(71, 85, 105);
-  doc.text(`Ditetapkan di: Kendari • Tanggal: ${currentDate}`, marginX + contentWidth, currentY, { align: 'right' });
+  doc.text(`Ditetapkan di: Kendari • Tanggal: ${formattedWorkDate}`, marginX + contentWidth, currentY, { align: 'right' });
 
   currentY += 4.5;
 
@@ -601,11 +640,19 @@ export function generateAndDownloadJobsheetPdf({
   doc.setTextColor(100, 116, 139);
   doc.text('NIP: ................................', marginX + sigColWidth * 2.5, currentY + 18, { align: 'center' });
 
+  return doc;
+}
+
+export function generateAndDownloadJobsheetPdf(options: GeneratePdfOptions): void {
+  const doc = buildJobsheetPdfDocument(options);
+
   // ----------------------------------------------------
   // SIMPAN LANGSUNG KE BROWSER (DIRECT DOWNLOAD)
   // ----------------------------------------------------
-  const cleanProjectTitle = (project.badgeEarned || project.title).replace(/[^a-zA-Z0-9]/g, '_').slice(0, 30);
-  const cleanStudentName = (studentName || 'Siswa').replace(/[^a-zA-Z0-9]/g, '_');
+  const cleanProjectTitle = (options.project.badgeEarned || options.project.title)
+    .replace(/[^a-zA-Z0-9]/g, '_')
+    .slice(0, 30);
+  const cleanStudentName = (options.studentName || 'Siswa').replace(/[^a-zA-Z0-9]/g, '_');
   const fileName = `Laporan_Asesmen_Jobsheet_${cleanProjectTitle}_${cleanStudentName}.pdf`;
 
   // Trigger browser download langsung

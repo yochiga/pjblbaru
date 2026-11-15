@@ -28,18 +28,30 @@ interface InteractiveJobsheetModalProps {
   onUpdateProject?: (updatedProject: RecommendedProject) => void;
 }
 
-export function InteractiveJobsheetModal({
+export function InteractiveJobsheetModal(props: InteractiveJobsheetModalProps) {
+  if (!props.project) return null;
+  return <InteractiveJobsheetModalContent {...props} project={props.project} />;
+}
+
+function InteractiveJobsheetModalContent({
   project,
   onClose,
   onSaveProgress,
   onUpdateProject,
-}: InteractiveJobsheetModalProps) {
-  if (!project) return null;
+}: Omit<InteractiveJobsheetModalProps, 'project'> & { project: RecommendedProject }) {
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [studentNotes, setStudentNotes] = useState('');
   const [studentName, setStudentName] = useState('Siswa Vokasi');
+  const [studentClass, setStudentClass] = useState('XII SMK');
+  const [workDate, setWorkDate] = useState(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
   const [schoolName, setSchoolName] = useState('SMKN 4 Kendari');
   const [isSavedNotice, setIsSavedNotice] = useState(false);
   const [activeModalTab, setActiveModalTab] = useState<'steps' | 'report'>('steps');
@@ -168,6 +180,8 @@ export function InteractiveJobsheetModal({
         steps,
         completedSteps,
         studentName,
+        studentClass,
+        workDate,
         schoolName,
         studentNotes,
         teacherNotes,
@@ -290,6 +304,8 @@ export function InteractiveJobsheetModal({
                   steps={steps}
                   completedSteps={completedSteps}
                   studentName={studentName}
+                  studentClass={studentClass}
+                  workDate={workDate}
                   schoolName={schoolName}
                   studentNotes={studentNotes}
                   teacherNotes={teacherNotes}
@@ -303,20 +319,53 @@ export function InteractiveJobsheetModal({
               {/* Identitas Siswa */}
           <div className="bg-slate-950/60 p-4 border border-slate-800 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             <div>
-              <label className="text-slate-400 block mb-1">Nama Siswa Praktikan:</label>
+              <label htmlFor="jobsheet-student-name" className="text-slate-400 block mb-1">
+                Nama Siswa Praktikan:
+              </label>
               <input
+                id="jobsheet-student-name"
                 type="text"
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
+                placeholder="Masukkan nama lengkap siswa..."
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
             </div>
             <div>
-              <label className="text-slate-400 block mb-1">Nama Sekolah / Instansi:</label>
+              <label htmlFor="jobsheet-student-class" className="text-slate-400 block mb-1">
+                Kelas Siswa:
+              </label>
               <input
+                id="jobsheet-student-class"
+                type="text"
+                value={studentClass}
+                onChange={(e) => setStudentClass(e.target.value)}
+                placeholder="Contoh: XI TKJ 1 / XII TBSM 2"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="jobsheet-work-date" className="text-slate-400 block mb-1">
+                Tanggal Pengerjaan:
+              </label>
+              <input
+                id="jobsheet-work-date"
+                type="date"
+                value={workDate}
+                onChange={(e) => setWorkDate(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 [color-scheme:dark]"
+              />
+            </div>
+            <div>
+              <label htmlFor="jobsheet-school-name" className="text-slate-400 block mb-1">
+                Nama Sekolah / Instansi:
+              </label>
+              <input
+                id="jobsheet-school-name"
                 type="text"
                 value={schoolName}
                 onChange={(e) => setSchoolName(e.target.value)}
+                placeholder="Nama SMK / Instansi..."
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
             </div>
